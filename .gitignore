@@ -1,0 +1,273 @@
+# ========================================
+# 操作系统相关
+# ========================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ========================================
+# 编辑器和IDE
+# ========================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ========================================
+# Go相关
+# ========================================
+# 二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go测试文件
+*.test
+
+# Go覆盖率文件
+*.out
+*.prof
+
+# Go依赖目录
+vendor/
+
+# Go模块缓存
+go.sum
+
+# 编译输出
+bin/
+dist/
+build/
+
+# ========================================
+# Node.js和前端相关
+# ========================================
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 构建输出
+dist/
+build/
+.next/
+.nuxt/
+.vuepress/dist
+
+# 缓存目录
+.npm
+.eslintcache
+.parcel-cache/
+.cache/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+env.global
+
+# Vite
+.vite/
+
+# ========================================
+# 数据库相关
+# ========================================
+# SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# PostgreSQL
+*.dump
+*.sql.gz
+
+# ========================================
+# Docker相关
+# ========================================
+# Docker构建缓存
+.dockerignore
+docker-compose.override.yml
+
+# ========================================
+# 安全和敏感信息
+# ========================================
+# 私钥文件
+*.pem
+*.key
+*.p12
+*.pfx
+
+# 配置文件中的敏感信息
+secrets/
+.secrets/
+credentials/
+
+# API密钥文件
+.api-keys
+api-keys.json
+
+# ========================================
+# 日志和临时文件
+# ========================================
+# 日志文件
+*.log
+logs/
+log/
+
+# 进程文件
+*.pid
+*.seed
+*.pid.lock
+
+# 临时文件
+tmp/
+temp/
+.tmp/
+
+# 覆盖文件
+coverage/
+*.lcov
+.nyc_output
+
+# ========================================
+# 测试相关
+# ========================================
+# 测试输出
+test-results/
+coverage/
+.coverage
+htmlcov/
+
+# Jest
+.jest/
+
+# ========================================
+# 区块链和Web3相关
+# ========================================
+# Hardhat
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Truffle
+build/
+contracts/build/
+
+# Remix
+.deps/
+
+# 钱包文件
+wallet.json
+keystore/
+*.keystore
+
+# ========================================
+# 本地开发相关
+# ========================================
+# 本地开发日志和进程文件
+logs/
+*.log
+*.pid
+
+# 本地配置文件
+.env
+.env.local
+.env.*.local
+
+# 本地数据库文件
+*.sqlite
+*.db
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# ========================================
+# 部署相关
+# ========================================
+# 部署脚本生成的文件
+deploy.log
+deployment/
+.deploy/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes
+*.yaml.bak
+*.yml.bak
+
+# ========================================
+# 其他
+# ========================================
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 系统文件
+*.orig
+*.rej
+
+# 锁文件（根据项目需要选择保留或忽略）
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# 文档生成
+docs/build/
+site/
+docs/
+scripts/

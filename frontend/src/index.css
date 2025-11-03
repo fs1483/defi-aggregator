@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* Tailwind v4 新语法：直接导入而不是分层 */
+
+/* 自定义CSS变量 (Tailwind v4 推荐) */
+@layer theme {
+  :root {
+    --color-defi-primary: oklch(0.65 0.15 262);
+    --color-defi-success: oklch(0.70 0.17 142);
+    --color-defi-warning: oklch(0.75 0.15 65);
+    --color-defi-error: oklch(0.65 0.20 25);
+    
+    --gradient-defi: linear-gradient(135deg, var(--color-defi-primary), oklch(0.55 0.19 262));
+    --shadow-defi: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-defi-primary: oklch(0.70 0.15 262);
+      --gradient-defi: linear-gradient(135deg, var(--color-defi-primary), oklch(0.60 0.19 262));
+    }
+  }
+}
+
+/* 基础样式 */
+@layer base {
+  * {
+    border-color: theme(colors.gray.200);
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: theme(colors.gray.50);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    body {
+      background: theme(colors.gray.900);
+    }
+    
+    * {
+      border-color: theme(colors.gray.700);
+    }
+  }
+}
+
+/* 组件样式 (Tailwind v4 风格) */
+@layer components {
+  .defi-card {
+    background: theme(colors.white);
+    border-radius: theme(borderRadius.xl);
+    border-width: 1px;
+    border-color: theme(colors.gray.200);
+    box-shadow: var(--shadow-defi);
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      transform: translateY(-1px);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      background: theme(colors.gray.800);
+      border-color: theme(colors.gray.700);
+    }
+  }
+  
+  .defi-button {
+    background: var(--color-defi-primary);
+    color: theme(colors.white);
+    font-weight: theme(fontWeight.medium);
+    padding: theme(spacing.3) theme(spacing.6);
+    border-radius: theme(borderRadius.lg);
+    transition: all 0.2s ease-in-out;
+    border: none;
+    cursor: pointer;
+    
+    &:hover {
+      background: oklch(0.60 0.17 262);
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px oklch(0.65 0.15 262 / 0.3);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+  }
+  
+  .defi-input {
+    width: 100%;
+    padding: theme(spacing.3) theme(spacing.4);
+    border: 1px solid theme(colors.gray.300);
+    border-radius: theme(borderRadius.lg);
+    background: theme(colors.white);
+    color: theme(colors.gray.900);
+    transition: all 0.2s ease-in-out;
+    
+    &:focus {
+      outline: 2px solid var(--color-defi-primary);
+      outline-offset: -2px;
+      border-color: transparent;
+    }
+    
+    &::placeholder {
+      color: theme(colors.gray.400);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      background: theme(colors.gray.800);
+      border-color: theme(colors.gray.600);
+      color: theme(colors.gray.100);
+      
+      &::placeholder {
+        color: theme(colors.gray.500);
+      }
+    }
+  }
+  
+  .token-logo {
+    width: theme(spacing.8);
+    height: theme(spacing.8);
+    border-radius: 50%;
+    border: 1px solid theme(colors.gray.200);
+    object-fit: cover;
+    
+    @media (prefers-color-scheme: dark) {
+      border-color: theme(colors.gray.600);
+    }
+  }
+  
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+    border-radius: 50%;
+    border: 2px solid theme(colors.gray.300);
+    border-top-color: var(--color-defi-primary);
+    
+    @media (prefers-color-scheme: dark) {
+      border-color: theme(colors.gray.600);
+    }
+  }
+  
+  /* 新增：现代化的渐变背景 */
+  .defi-gradient-bg {
+    background: var(--gradient-defi);
+  }
+  
+  /* 新增：玻璃态效果 */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}

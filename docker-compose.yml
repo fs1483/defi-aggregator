@@ -1,0 +1,180 @@
+# DeFi聚合器开发环境 Docker Compose配置
+# 使用全局配置文件(env.global)统一管理端口和基础配置
+version: '3.8'
+
+# 全局环境变量文件
+x-env-files: &env-files
+  - ./env.global
+
+services:
+  # ========================================
+  # 数据库服务
+  # ========================================
+  
+  # PostgreSQL主数据库
+  postgres:
+    image: postgres:15
+    container_name: defi-postgres
+    env_file: *env-files
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-network
+
+  # Redis缓存服务
+  redis:
+    image: redis:7.0
+    container_name: defi-redis
+    env_file: *env-files
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - defi-network
+
+  # ========================================
+  # 后端微服务
+  # ========================================
+  
+  # 智能路由服务
+  smart-router:
+    build:
+      context: ./backend/smart-router
+      dockerfile: Dockerfile
+    container_name: defi-smart-router
+    ports:
+      - "${SMART_ROUTER_PORT}:${SMART_ROUTER_PORT}"
+    env_file:
+      - ./env.global
+      - ./backend/smart-router/.env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SMART_ROUTER_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network
+
+  # 业务逻辑服务
+  business-logic:
+    build:
+      context: ./backend/business-logic
+      dockerfile: Dockerfile
+    container_name: defi-business-logic
+    ports:
+      - "${BUSINESS_LOGIC_PORT}:${BUSINESS_LOGIC_PORT}"
+    env_file:
+      - ./env.global
+      - ./backend/business-logic/.env
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - SMART_ROUTER_URL=http://smart-router:${SMART_ROUTER_PORT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      smart-router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BUSINESS_LOGIC_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network
+  
+  # API网关服务
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: defi-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    env_file:
+      - ./env.global
+      - ./backend/api-gateway/.env
+    environment:
+      - BUSINESS_LOGIC_TARGETS=http://business-logic:${BUSINESS_LOGIC_PORT}
+      - SMART_ROUTER_TARGETS=http://smart-router:${SMART_ROUTER_PORT}
+    depends_on:
+      business-logic:
+        condition: service_healthy
+      smart-router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network
+
+  # ========================================
+  # 前端服务
+  # ========================================
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: defi-frontend
+    ports:
+      - "${FRONTEND_PORT}:80"
+    env_file:
+      - ./env.global
+      - ./frontend/.env.local
+    environment:
+      - VITE_API_URL=http://localhost:${API_GATEWAY_PORT}
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network
+
+# ========================================
+# 网络和存储卷配置
+# ========================================
+
+networks:
+  defi-network:
+    driver: bridge
+    name: defi-aggregator-network
+
+volumes:
+  postgres_data:
+    name: defi-postgres-data
+  redis_data:
+    name: defi-redis-data

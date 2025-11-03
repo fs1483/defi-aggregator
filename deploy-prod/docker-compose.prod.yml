@@ -1,0 +1,209 @@
+# DeFi聚合器生产环境Docker Compose配置
+# 用于生产服务器部署，包含性能优化和安全配置
+version: '3.8'
+
+services:
+  # ========================================
+  # 数据库服务
+  # ========================================
+  
+  # PostgreSQL主数据库
+  postgres:
+    image: postgres:15
+    container_name: defi-postgres-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ../database/migrations:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-network-prod
+
+  # Redis缓存服务
+  redis:
+    image: redis:7.0
+    container_name: defi-redis-prod
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data_prod:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - defi-network-prod
+
+  # ========================================
+  # 后端微服务
+  # ========================================
+  
+  # 智能路由服务
+  smart-router:
+    build:
+      context: ../backend/smart-router
+      dockerfile: Dockerfile
+    container_name: defi-smart-router-prod
+    ports:
+      - "${SMART_ROUTER_PORT}:${SMART_ROUTER_PORT}"
+    env_file:
+      - ../.env.global
+      - ./.env.prod
+    environment:
+      - ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SMART_ROUTER_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network-prod
+
+  # 业务逻辑服务
+  business-logic:
+    build:
+      context: ../backend/business-logic
+      dockerfile: Dockerfile
+    container_name: defi-business-logic-prod
+    ports:
+      - "${BUSINESS_LOGIC_PORT}:${BUSINESS_LOGIC_PORT}"
+    env_file:
+      - ../.env.global
+      - ./.env.prod
+    environment:
+      - ENV=production
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - SMART_ROUTER_URL=http://smart-router:${SMART_ROUTER_PORT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      smart-router:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BUSINESS_LOGIC_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network-prod
+
+  # API网关服务
+  api-gateway:
+    build:
+      context: ../backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: defi-api-gateway-prod
+    ports:
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    env_file:
+      - ../.env.global
+      - ./.env.prod
+    environment:
+      - ENV=production
+      - BUSINESS_LOGIC_TARGETS=http://business-logic:${BUSINESS_LOGIC_PORT}
+      - SMART_ROUTER_TARGETS=http://smart-router:${SMART_ROUTER_PORT}
+    depends_on:
+      business-logic:
+        condition: service_healthy
+      smart-router:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network-prod
+
+  # ========================================
+  # 前端服务
+  # ========================================
+  
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: defi-frontend-prod
+    ports:
+      - "${FRONTEND_PORT}:80"
+    env_file:
+      - ../.env.global
+      - ./.env.prod
+    environment:
+      - VITE_API_URL=http://localhost:${API_GATEWAY_PORT}
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - defi-network-prod
+
+  # ========================================
+  # 反向代理（生产环境用）
+  # ========================================
+  
+  nginx:
+    image: nginx:alpine
+    container_name: defi-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
+      # - ./ssl:/etc/nginx/ssl:ro  # SSL证书目录（如果需要HTTPS）
+    depends_on:
+      - api-gateway
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - defi-network-prod
+
+# ========================================
+# 网络和存储卷配置
+# ========================================
+
+networks:
+  defi-network-prod:
+    driver: bridge
+    name: defi-aggregator-prod-network
+
+volumes:
+  postgres_data_prod:
+    name: defi-postgres-prod-data
+  redis_data_prod:
+    name: defi-redis-prod-data
